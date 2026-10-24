@@ -49,6 +49,8 @@ textarea{width:100%;resize:vertical;min-height:4.5rem}
 .login input{width:100%;padding:10px 12px;font-size:1rem}
 .login .msg{font-size:.85rem;color:var(--muted);min-height:1.2em}
 .login .err{color:var(--alta)}
+.fl{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--muted)}
+.fl input{color:var(--fg)}
 
 /* Cambios */
 .changes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr));gap:10px}
@@ -155,23 +157,15 @@ dialog::backdrop{background:rgba(10,15,25,.45)}
 </head>
 <body>
 
-<div id="login" class="login card" hidden>
+<form id="login" class="login card" hidden novalidate>
   <h1 style="font-size:1.6rem">Solicitudes de pago</h1>
-  <div class="meta">Entra con tu correo de Integra Park. Te llegará un código de 6 dígitos.</div>
-  <div id="step-email">
-    <input id="l-email" type="email" placeholder="tu@integrapark.com.mx" autocomplete="email">
-    <div style="height:10px"></div>
-    <button class="btn pri" id="l-send" style="width:100%">Enviarme el código</button>
-  </div>
-  <div id="step-code" hidden>
-    <input id="l-code" inputmode="numeric" autocomplete="one-time-code" placeholder="Código de 6 dígitos" maxlength="10">
-    <div style="height:10px"></div>
-    <button class="btn pri" id="l-verify" style="width:100%">Entrar</button>
-    <div style="height:8px"></div>
-    <button class="btn" id="l-back" style="width:100%">Usar otro correo</button>
-  </div>
-  <div class="msg" id="l-msg"></div>
-</div>
+  <div class="meta">Entra con tu correo de Integra Park y tu contraseña.</div>
+  <label class="fl">Correo<input id="l-email" type="email" name="email" placeholder="tu@integrapark.com.mx" autocomplete="username" required></label>
+  <label class="fl">Contraseña<input id="l-pass" type="password" name="password" autocomplete="current-password" required></label>
+  <button class="btn pri" id="l-go" type="submit" style="width:100%;padding:10px">Entrar</button>
+  <div class="msg" id="l-msg" role="alert"></div>
+  <div class="meta">¿Olvidaste tu contraseña? Pídele a Pablo que te asigne una nueva.</div>
+</form>
 
 <div id="app" class="wrap" hidden>
   <div id="demo" class="demo" hidden>
@@ -184,7 +178,7 @@ dialog::backdrop{background:rgba(10,15,25,.45)}
       <h1>Solicitudes de pago</h1>
       <div class="meta">Corporativo Patrimonial Cinqueterra y Proyectos Industriales y Verticales GC · <span id="upd"></span></div>
     </div>
-    <div class="who"><span id="who"></span><button class="btn pri" id="btn-new" hidden>+ Nueva solicitud</button><button class="btn" id="btn-out">Salir</button></div>
+    <div class="who"><span id="who"></span><button class="btn pri" id="btn-new" hidden>+ Nueva solicitud</button><button class="btn" id="btn-pass">Cambiar contraseña</button><button class="btn" id="btn-out">Salir</button></div>
   </header>
 
   <section class="changes" id="changes"></section>
@@ -229,15 +223,23 @@ dialog::backdrop{background:rgba(10,15,25,.45)}
 
 <dialog id="dlg-detail"><div class="dlg" id="detail"></div></dialog>
 <dialog id="dlg-form"><div class="dlg" id="form"></div></dialog>
+<dialog id="dlg-pass"><form class="dlg" id="pass-form" novalidate>
+  <div class="dlg-h"><h3>Cambiar mi contraseña</h3><button class="x" type="button" id="pass-x" aria-label="Cerrar">×</button></div>
+  <div class="dlg-b form">
+    <label class="full">Nueva contraseña (mínimo 8 caracteres)<input id="p-new" type="password" autocomplete="new-password" minlength="8" required></label>
+    <label class="full">Repite la nueva contraseña<input id="p-new2" type="password" autocomplete="new-password" minlength="8" required></label>
+    <div class="msg err full" id="p-msg" role="alert" style="font-size:.85rem;color:var(--alta);min-height:1.2em"></div>
+  </div>
+  <div class="dlg-f"><button class="btn" type="button" id="pass-cancel">Cancelar</button><button class="btn pri" type="submit" id="pass-save">Guardar contraseña</button></div>
+</form></dialog>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
 // ===================== CONFIGURACIÓN =====================
 // Pega aquí los datos de tu proyecto de Supabase (Project Settings > API).
 // Mientras estén vacíos, el tablero corre en modo demostración.
-const SUPABASE_URL = 'https://fcfdumvvplgziqrfysqg.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjZmR1bXZ2cGxnemlxcmZ5c3FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4NjE3MjgsImV4cCI6MjEwODQzNzcyOH0.tmBGOPLQJL3t6izL0DjJ66ARFrdnZdmr5NY2DrtVVng';
-// =========================================================
+const SUPABASE_URL = 'https://fcfdumvvplgziqrfysqg.supabase.co'; 
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjZmR1bXZ2cGxnemlxcmZ5c3FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4NjE3MjgsImV4cCI6MjEwODQzNzcyOH0.tmBGOPLQJL3t6izL0DjJ66ARFrdnZdmr5NY2DrtVVng';// =========================================================
 
 const DEMO = !SUPABASE_URL || !SUPABASE_ANON_KEY;
 const TIPOS = ['Anticipo', 'Estimación de avance', 'Finiquito', 'Pago único'];
@@ -276,9 +278,10 @@ function sbApi() {
   });
   return {
     async session() { return ok(await sb.auth.getSession()).session; },
-    async sendCode(email) { ok(await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } })); },
-    async verify(email, token) { ok(await sb.auth.verifyOtp({ email, token, type: 'email' })); },
-    async signOut() { await sb.auth.signOut(); },
+    async signIn(email, password) { ok(await sb.auth.signInWithPassword({ email, password })); },
+    async changePassword(password) { ok(await sb.auth.updateUser({ password })); },
+    async signOut() { await sb.removeAllChannels(); await sb.auth.signOut(); },
+    onAuth(cb) { sb.auth.onAuthStateChange((event) => cb(event)); },
     async whoami() { const [r, n] = await Promise.all([sb.rpc('mi_rol'), sb.rpc('mi_nombre')]); return { rol: ok(r), nombre: ok(n) }; },
     async load() {
       const [a, b, c] = await Promise.all([
@@ -295,7 +298,7 @@ function sbApi() {
     async remove(id) { ok(await sb.from('solicitudes').delete().eq('id', id)); },
     async markPaid(ids, fecha) { ok(await sb.from('solicitudes').update({ estatus: 'Pagado', fecha_pago: fecha }).in('id', ids)); },
     async unpay(id) { ok(await sb.from('solicitudes').update({ estatus: 'Pendiente', fecha_pago: null }).eq('id', id)); },
-    subscribe(cb) { sb.channel('cambios').on('postgres_changes', { event: '*', schema: 'public' }, cb).subscribe(); }
+    subscribe(cb) { sb.removeAllChannels(); sb.channel('cambios').on('postgres_changes', { event: '*', schema: 'public' }, cb).subscribe(); }
   };
 }
 
@@ -312,7 +315,8 @@ function demoApi() {
   const clone = (x) => JSON.parse(JSON.stringify(x));
   return {
     async session() { return { demo: true }; },
-    async sendCode() {}, async verify() {}, async signOut() { toast('En modo demostración no hay sesión que cerrar'); },
+    async signIn() {}, async changePassword() {}, async signOut() { toast('En modo demostración no hay sesión que cerrar'); },
+    onAuth() {},
     async whoami() { const u = me(); return { rol: u.rol, nombre: u.nombre }; },
     async load() { return clone(db); },
     async decide(id, decision) {
@@ -354,9 +358,11 @@ async function reload() {
 let reloadT;
 const reloadSoon = () => { clearTimeout(reloadT); reloadT = setTimeout(() => reload().catch(console.error), 300); };
 
-// ===================== LOGIN =====================
+// ===================== ACCESO Y SESIÓN =====================
+let entering = false;
 async function start() {
   if (DEMO) { $('demo').hidden = false; return enter(); }
+  api.onAuth((event) => { if (event === 'SIGNED_OUT') leave(); });
   let ses = null;
   try { ses = await api.session(); } catch (e) { console.error(e); }
   if (ses) return enter();
@@ -365,31 +371,45 @@ async function start() {
 function showLogin(msg, isErr) {
   $('app').hidden = true; $('login').hidden = false;
   const lm = $('l-msg'); lm.textContent = msg || ''; lm.className = 'msg' + (isErr ? ' err' : '');
+  setTimeout(() => ($('l-email').value ? $('l-pass') : $('l-email')).focus(), 30);
 }
-$('l-send').addEventListener('click', async () => {
-  const email = $('l-email').value.trim().toLowerCase();
+function leave(msg) {
+  // Limpia todo lo que se cargó con la sesión anterior
+  Object.assign(S, { rol: null, nombre: '', rows: [], comentarios: [], decisiones: [], loadedAt: null });
+  U.sel.clear(); U.open = null;
+  ['dlg-detail', 'dlg-form', 'dlg-pass'].forEach((id) => { if ($(id).open) $(id).close(); });
+  $('tb').innerHTML = ''; $('detail').innerHTML = '';
+  $('l-pass').value = '';
+  showLogin(msg || 'Sesión cerrada.');
+}
+$('login').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = $('l-email').value.trim().toLowerCase(), pass = $('l-pass').value;
   if (!/^\S+@\S+\.\S+$/.test(email)) return showLogin('Escribe un correo válido.', true);
-  $('l-send').disabled = true;
-  try { await api.sendCode(email); $('step-email').hidden = true; $('step-code').hidden = false; showLogin('Te enviamos un código a ' + email + '. Revisa también spam.'); $('l-code').focus(); }
-  catch (e) { showLogin('No pudimos enviar el código. Verifica que tu correo tenga acceso.', true); console.error(e); }
-  $('l-send').disabled = false;
+  if (!pass) return showLogin('Escribe tu contraseña.', true);
+  $('l-go').disabled = true; $('l-msg').textContent = 'Entrando…'; $('l-msg').className = 'msg';
+  try { await api.signIn(email, pass); $('l-pass').value = ''; await enter(); }
+  catch (err) {
+    console.error(err);
+    const m = String(err && err.message || '').toLowerCase();
+    showLogin(m.includes('invalid') ? 'Correo o contraseña incorrectos.'
+      : m.includes('not confirmed') ? 'Tu usuario no está confirmado. Pídele a Pablo que lo revise.'
+      : m.includes('rate') || m.includes('too many') ? 'Demasiados intentos. Espera unos minutos.'
+      : 'No se pudo entrar. Revisa tu conexión e intenta de nuevo.', true);
+  }
+  $('l-go').disabled = false;
 });
-$('l-verify').addEventListener('click', async () => {
-  const email = $('l-email').value.trim().toLowerCase(), code = $('l-code').value.replace(/\s/g, '');
-  $('l-verify').disabled = true;
-  try { await api.verify(email, code); await enter(); }
-  catch (e) { showLogin('El código no es válido o ya expiró. Pide uno nuevo.', true); console.error(e); }
-  $('l-verify').disabled = false;
+$('btn-out').addEventListener('click', async () => {
+  if (DEMO) return api.signOut();
+  try { await api.signOut(); } catch (e) { console.error(e); }
+  leave();
 });
-$('l-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('l-verify').click(); });
-$('l-email').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('l-send').click(); });
-$('l-back').addEventListener('click', () => { $('step-email').hidden = false; $('step-code').hidden = true; showLogin(''); });
-$('btn-out').addEventListener('click', async () => { await api.signOut(); if (!DEMO) { $('step-email').hidden = false; $('step-code').hidden = true; showLogin('Sesión cerrada.'); } });
 
 async function enter() {
+  if (entering) return; entering = true;
   try {
     const w = await api.whoami();
-    if (!w.rol) { await api.signOut(); return showLogin('Tu correo no tiene acceso a este tablero.', true); }
+    if (!w.rol) { await api.signOut(); return leave('Tu usuario no tiene acceso a este tablero.'); }
     S.rol = w.rol; S.nombre = w.nombre;
     $('login').hidden = true; $('app').hidden = false;
     $('who').textContent = S.nombre + (isAdmin() ? ' · administrador' : ' · autoriza');
@@ -397,7 +417,33 @@ async function enter() {
     await reload();
     api.subscribe(reloadSoon);
   } catch (e) { console.error(e); showLogin('No se pudo cargar el tablero. Intenta de nuevo.', true); }
+  finally { entering = false; }
 }
+
+// Cambiar la propia contraseña (sin correos de por medio)
+$('btn-pass').addEventListener('click', () => {
+  if (DEMO) return toast('En la vista previa no hay contraseñas que cambiar');
+  $('p-new').value = ''; $('p-new2').value = ''; $('p-msg').textContent = '';
+  $('dlg-pass').showModal(); setTimeout(() => $('p-new').focus(), 30);
+});
+$('pass-x').addEventListener('click', () => $('dlg-pass').close());
+$('pass-cancel').addEventListener('click', () => $('dlg-pass').close());
+$('pass-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const a = $('p-new').value, b = $('p-new2').value;
+  if (a.length < 8) { $('p-msg').textContent = 'Debe tener al menos 8 caracteres.'; return; }
+  if (a !== b) { $('p-msg').textContent = 'Las contraseñas no coinciden.'; return; }
+  $('pass-save').disabled = true;
+  try { await api.changePassword(a); $('dlg-pass').close(); toast('Contraseña actualizada'); }
+  catch (err) {
+    console.error(err);
+    const m = String(err && err.message || '').toLowerCase();
+    $('p-msg').textContent = m.includes('different') ? 'La nueva contraseña debe ser distinta a la actual.'
+      : m.includes('weak') || m.includes('characters') ? 'La contraseña es muy débil. Usa letras, números y símbolos.'
+      : 'No se pudo cambiar. Cierra sesión, vuelve a entrar e intenta otra vez.';
+  }
+  $('pass-save').disabled = false;
+});
 $('demo-role').addEventListener('change', () => { U.sel.clear(); enter(); });
 
 // ===================== FILTROS =====================
